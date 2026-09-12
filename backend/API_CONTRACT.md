@@ -22,7 +22,7 @@ The extension sends a full snapshot for a single device. Full snapshots keep rec
 }
 ```
 
-`career` is optional. It may be filled by the extension extractor or later by the career agent.
+`career` is optional and may be added during capture or a later enrichment step.
 
 Returns `201`: `{ "snapshot_id": 12, "device_id": 2, "tabs_upserted": 1 }`.
 
@@ -33,7 +33,7 @@ Returns `201`: `{ "snapshot_id": 12, "device_id": 2, "tabs_upserted": 1 }`.
 - `GET /tabs/history?user_id=<id>&since=2026-09-01T00:00:00Z` — raw observation history for staleness reasoning.
 - `GET /tabs/duplicates?user_id=<id>` — groups currently open tabs by normalized URL (tracking params/fragments removed).
 
-`user_id` is optional only for the original single-user demo (`default`). After `POST /users`, the extension and agent must send the returned ID with every user-scoped operation.
+`user_id` is optional only for the original single-user demo (`default`). In multi-user deployments, the ID returned by `POST /users` identifies every user-scoped operation.
 
 ## Career-memory storage endpoints
 
@@ -41,7 +41,7 @@ All use the same `X-API-Key` header and Pydantic-validated JSON bodies.
 
 - `POST /users` — creates a user and empty profile: `{ "email": "name@example.com", "name": "Name" }`.
 - `PUT` / `GET /users/{user_id}/profile` — saves and reads profile context such as `skills`, `resume_url`, and job preferences.
-- `POST /jobs` / `GET /jobs/{user_id}` — persists extracted job data. The agent may supply `match_score` and `recommendation`; the storage API does not invent either value.
+- `POST /jobs` / `GET /jobs/{user_id}` — persists extracted job data, including externally computed `match_score` and `recommendation` values.
 - `POST /applications` / `GET /applications/{user_id}` — persists draft, review-ready, and submitted application states. One application per user/job is enforced.
 - `POST /reminders` / `GET /reminders/{user_id}` — stores follow-up reminders for any tab (`tab_id`), a job (`job_id`), or both. Use `kind` values such as `tab_return`, `job_continue`, or `follow_up`.
 - `GET /dashboard/{user_id}` — returns counts for saved jobs, applications, strong matches, review-ready applications, and pending reminders.
@@ -50,7 +50,7 @@ Every `POST /snapshots` also writes a `tab_sessions` record. The detailed state 
 
 ## `POST /actions`
 
-Use this for both proposed and executed actions; never treat it as permission to execute an extension action.
+Stores both proposed and executed actions. Logging an action does not execute it.
 
 ```json
 {
@@ -64,6 +64,6 @@ Use this for both proposed and executed actions; never treat it as permission to
 }
 ```
 
-The extension/UX must require explicit user confirmation before a final application submission or destructive tab action.
+Final application submissions and destructive tab actions require explicit user confirmation before execution.
 
 `GET /actions?limit=100` returns this audit log newest first for the popup/dashboard. Store application milestones (`prepare_application`, `submitted`, `rejected`) here to provide the initial application-memory feature without coupling it to a particular job board.

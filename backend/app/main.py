@@ -125,7 +125,7 @@ def ingest_snapshot(snapshot: SnapshotInput, db: Session = Depends(get_db)) -> d
                       window_id=str(item.window_id) if item.window_id is not None else None, active=item.active,
                       is_open=True, last_seen_at=snapshot.captured_at, last_accessed_at=item.last_accessed,
                       last_snapshot_id=record.id)
-        # A normal capture should never erase enrichment written by the agent.
+        # A normal capture should never erase existing enrichment.
         if item.career is not None:
             values["career_data"] = item.career.model_dump(mode="json")
         if not tab:

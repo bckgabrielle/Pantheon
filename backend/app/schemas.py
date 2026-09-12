@@ -68,7 +68,7 @@ class JobInput(BaseModel):
     description: str | None = None
     skills: list[str] = Field(default_factory=list, max_length=100)
     deadline: datetime | None = None
-    # Computed by the agent; this API only validates and persists it.
+    # Supplied by an enrichment service; the API validates and persists it.
     match_score: float | None = Field(default=None, ge=0, le=100)
     recommendation: str | None = None
     status: str = Field(default="saved", max_length=32)

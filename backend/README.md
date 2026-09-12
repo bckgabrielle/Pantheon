@@ -1,6 +1,6 @@
 # Pantheon backend
 
-FastAPI + PostgreSQL storage for the browser career-memory agent.
+FastAPI + PostgreSQL storage for browser-based career memory.
 
 ```bash
 cd backend
