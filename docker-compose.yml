@@ -1,0 +1,33 @@
+services:
+  agent-service:
+    build:
+      context: ./agent_service
+    env_file:
+      - .env
+    environment:
+      BACKEND_BASE_URL: http://pantheon-backend:8001
+      BACKEND_API_KEY: ${PANTHEON_API_KEY}
+      BACKEND_USER_ID: ${BACKEND_USER_ID:-default}
+    ports:
+      - "8000:8000"
+    depends_on:
+      pantheon-backend:
+        condition: service_healthy
+
+  pantheon-backend:
+    build:
+      context: ./backend
+    env_file:
+      - .env
+    environment:
+      PANTHEON_API_KEY: ${PANTHEON_API_KEY}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:///./pantheon.db}
+      ALLOW_INSECURE_LOCALHOST: ${ALLOW_INSECURE_LOCALHOST:-false}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
