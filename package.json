@@ -1,0 +1,23 @@
+{
+  "name": "run",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/chrome": "^0.2.9",
+    "@types/node": "^22.20.2",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.3"
+  },
+  "dependencies": {
+    "chrome-types": "^0.1.446"
+  }
+}
