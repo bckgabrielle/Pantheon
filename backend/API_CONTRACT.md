@@ -14,15 +14,15 @@ The extension sends a full snapshot for a single device. Full snapshots keep rec
   "captured_at": "2026-09-12T09:00:00Z",
   "source": "extension",
   "tabs": [{
-    "tab_id": 123, "title": "Software QA Engineer — Tana",
-    "url": "https://jobs.example.com/tana/qa", "favicon": "https://...",
+    "tab_id": 123, "title": "Database indexing notes",
+    "url": "https://example.com/postgres-indexing", "favicon": "https://...",
     "window_id": 9, "active": true, "last_accessed": "2026-09-12T08:58:00Z",
-    "career": {"company": "Tana", "role": "Software QA Engineer", "location": "Remote", "skills": ["QA", "API testing"], "status": "NOT_APPLIED", "match_score": 91}
+    "career": null
   }]
 }
 ```
 
-`career` is optional and may be added during capture or a later enrichment step.
+Snapshots represent all browser tabs, not only job tabs. `career` is optional job-specific enrichment and may be omitted for articles, research, shopping, travel, and other tab types.
 
 Returns `201`: `{ "snapshot_id": 12, "device_id": 2, "tabs_upserted": 1 }`.
 
@@ -35,7 +35,7 @@ Returns `201`: `{ "snapshot_id": 12, "device_id": 2, "tabs_upserted": 1 }`.
 
 `user_id` is optional only for the original single-user demo (`default`). In multi-user deployments, the ID returned by `POST /users` identifies every user-scoped operation.
 
-## Career-memory storage endpoints
+## Reminders and optional career tracking
 
 All use the same `X-API-Key` header and Pydantic-validated JSON bodies.
 
@@ -55,15 +55,15 @@ Stores both proposed and executed actions. Logging an action does not execute it
 ```json
 {
   "tab_id": 42,
-  "action_type": "prepare_application",
-  "status": "ready_for_review",
+  "action_type": "group_tabs",
+  "status": "proposed",
   "proposed": true,
-  "rationale": "91% profile match; application not completed.",
-  "payload": {"company": "Tana"},
+  "rationale": "These tabs cover the same research topic.",
+  "payload": {"group_name": "Research"},
   "outcome": null
 }
 ```
 
 Final application submissions and destructive tab actions require explicit user confirmation before execution.
 
-`GET /actions?limit=100` returns this audit log newest first for the popup/dashboard. Store application milestones (`prepare_application`, `submitted`, `rejected`) here to provide the initial application-memory feature without coupling it to a particular job board.
+`GET /actions?limit=100` returns this audit log newest first for the popup/dashboard. It supports tab actions such as `group_tabs`, `bookmark_tab`, and `close_tab`, as well as application milestones when career tracking is used.
