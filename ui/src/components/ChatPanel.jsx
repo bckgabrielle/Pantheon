@@ -1,26 +1,9 @@
 import { useRef, useState } from 'react'
-import { getCurrentTabs } from '../lib/api'
-
-// Mock query handling — a real implementation calls the backend/agent (owned
-// by #2/#3) rather than doing keyword matching client-side. This exists so
-// the chat UI and message list are fully built ahead of that being ready.
-async function mockAnswer(query) {
-  const tabs = await getCurrentTabs()
-  const words = query.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
-  const matches = tabs.filter((t) =>
-    words.some((w) => t.title.toLowerCase().includes(w) || t.url.toLowerCase().includes(w))
-  )
-
-  if (matches.length === 0) {
-    return "I couldn't find any open tabs matching that — try different wording, or ask about a specific site or topic."
-  }
-  const list = matches.map((t) => `• ${t.favicon} ${t.title} (${t.device_name})`).join('\n')
-  return `Found ${matches.length} matching tab${matches.length === 1 ? '' : 's'}:\n${list}`
-}
+import { runAgent } from '../lib/api'
 
 export default function ChatPanel() {
   const [messages, setMessages] = useState([
-    { role: 'agent', text: 'Ask me things like "what tabs do I have open about flights?"' },
+    { role: 'agent', text: 'I use your saved tab state to answer questions and propose changes for your approval.' },
   ])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -33,8 +16,13 @@ export default function ChatPanel() {
     setMessages((prev) => [...prev, { role: 'user', text: query }])
     setBusy(true)
 
-    const answer = await mockAnswer(query)
-    setMessages((prev) => [...prev, { role: 'agent', text: answer }])
+    try {
+      const plan = await runAgent(query)
+      const suffix = plan.actions?.length ? `\n\n${plan.actions.length} action${plan.actions.length === 1 ? '' : 's'} added to Confirm.` : ''
+      setMessages((prev) => [...prev, { role: 'agent', text: `${plan.summary || 'No changes proposed.'}${suffix}` }])
+    } catch (error) {
+      setMessages((prev) => [...prev, { role: 'agent', text: `I couldn’t reach the agent: ${error.message}. Check Settings.` }])
+    }
     setBusy(false)
     requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })

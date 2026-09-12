@@ -6,7 +6,7 @@ export default function DigestPanel() {
   const [clusters, setClusters] = useState(null)
 
   useEffect(() => {
-    getCurrentTabs().then((tabs) => setClusters(clusterTabs(tabs)))
+    getCurrentTabs().then((tabs) => setClusters(clusterTabs(tabs))).catch(() => setClusters([]))
   }, [])
 
   if (clusters === null) return <div className="empty-state">Building today's digest…</div>
@@ -20,7 +20,7 @@ export default function DigestPanel() {
             <span className="digest-count">{tabs.length} tab{tabs.length === 1 ? '' : 's'}</span>
           </div>
           {tabs.map((t) => (
-            <div className="tab-ref" key={t.tab_id}>
+            <div className="tab-ref" key={t.id ?? t.external_tab_id}>
               <span className="fav">{t.favicon}</span>
               <span className="title" title={t.title}>{t.title}</span>
               <span className="device-tag">{t.device_name}</span>

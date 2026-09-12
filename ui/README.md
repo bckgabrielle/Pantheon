@@ -30,3 +30,8 @@ npm run build     # produces dist/ for loading as an actual extension
 - `background.js`'s message shape (`EXECUTE_ACTION` / `{ ok, outcome }`) is my own guess — needs #1's sign-off or replacement.
 - The proposed-action schema needs a `risk_note` field added for the "bad action" scenario, and an `id` field for UI state tracking — currently assumed, not confirmed with #3.
 - Audit log currently lives in `chrome.storage.local`, not on #2's backend — needs reconciling with wherever `POST /actions` ends up living.
+# Pantheon frontend
+
+The popup is connected to the Pantheon backend and agent service. Start the services from the repository root with `docker compose up --build`, then open **Settings** in the extension and enter the backend URL (`http://localhost:8001`), agent URL (`http://localhost:8000`), API key, and user ID. Connection settings are kept in extension local storage.
+
+The UI reads current tabs, duplicate groups, action history, career profile, jobs, applications, reminders, and dashboard metrics from the API. Agent chat calls `/agent/run`; proposed actions remain confirmation-gated and every resolution is stored in the backend audit log.

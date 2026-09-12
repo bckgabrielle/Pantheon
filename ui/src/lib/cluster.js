@@ -27,7 +27,7 @@ export function clusterTabs(tabs, nowIso = new Date().toISOString()) {
   return Array.from(groups.entries())
     .map(([topic, tabsInTopic]) => {
       const staleCount = tabsInTopic.filter(
-        (t) => now - new Date(t.last_accessed).getTime() > STALE_THRESHOLD_MS
+        (t) => now - new Date(t.last_accessed_at || t.last_accessed || t.last_seen_at).getTime() > STALE_THRESHOLD_MS
       ).length
       return { topic, tabs: tabsInTopic, staleCount }
     })

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import ActionCard from './ActionCard'
-import { getProposedActions } from '../lib/api'
+import { getActions, getCurrentTabs, postActionLog } from '../lib/api'
 import { executeAction } from '../lib/messaging'
 import { appendAuditEntry } from '../lib/auditLog'
 
@@ -12,7 +12,14 @@ export default function ConfirmationList() {
   const [pendingIds, setPendingIds] = useState(new Set()) // ids currently mid-flight
 
   useEffect(() => {
-    getProposedActions().then(setProposals)
+    Promise.all([getActions(), getCurrentTabs()]).then(([actions, tabs]) => {
+      const tabMap = new Map(tabs.map((tab) => [tab.id, tab]))
+      setProposals(actions.filter((action) => action.proposed && action.status === 'proposed').map((action) => {
+        const params = action.payload?.params || action.payload || {}
+        const targetIds = params.tab_ids || (params.tab_id ? [params.tab_id] : action.tab_id ? [action.tab_id] : [])
+        return { id: action.id, action: action.action_type, target_tab_ids: targetIds, params, rationale: action.rationale || 'No rationale provided.', tabs: targetIds.map((id) => tabMap.get(Number(id))).filter(Boolean) }
+      }))
+    }).catch(() => setProposals([]))
   }, [])
 
   const pendingCount = useMemo(() => {
@@ -23,25 +30,23 @@ export default function ConfirmationList() {
   async function resolve(id, verdict) {
     const proposal = proposals.find((p) => p.id === id)
     setPendingIds((prev) => new Set(prev).add(id))
-
-    const result = await executeAction(proposal, verdict)
-
-    await appendAuditEntry({
-      id: `log_${Date.now()}_${id}`,
-      timestamp: new Date().toISOString(),
-      action: proposal.action,
-      target_tab_ids: proposal.target_tab_ids,
-      rationale: proposal.rationale,
-      verdict,
-      outcome: result.ok ? result.outcome : `error: ${result.error}`,
-    })
-
-    setResolutions((prev) => ({ ...prev, [id]: verdict }))
-    setPendingIds((prev) => {
-      const next = new Set(prev)
-      next.delete(id)
-      return next
-    })
+    try {
+      const result = await executeAction(proposal, verdict)
+      const outcome = result.ok ? result.outcome : `error: ${result.error}`
+      await postActionLog({
+        tab_id: proposal.tabs?.[0]?.id ?? null,
+        action_type: proposal.action,
+        status: verdict,
+        proposed: false,
+        rationale: proposal.rationale,
+        payload: proposal.params,
+        outcome: { result: outcome },
+      })
+      await appendAuditEntry({ id: `log_${Date.now()}_${id}`, timestamp: new Date().toISOString(), action: proposal.action, target_tab_ids: proposal.target_tab_ids, rationale: proposal.rationale, verdict, outcome })
+      setResolutions((prev) => ({ ...prev, [id]: verdict }))
+    } finally {
+      setPendingIds((prev) => { const next = new Set(prev); next.delete(id); return next })
+    }
   }
 
   function bulkApproveNonDestructive() {

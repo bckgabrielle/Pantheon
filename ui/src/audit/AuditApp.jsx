@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getAuditLog } from '../lib/auditLog'
-import { tabById } from '../mock/mockData'
+import { getActions, getCurrentTabs } from '../lib/api'
 
 const ACTION_TYPES = ['close_tab', 'group_tabs', 'bookmark_tab']
 
@@ -10,8 +9,16 @@ export default function AuditApp() {
   const [verdictFilter, setVerdictFilter] = useState('all')
   const [sinceDate, setSinceDate] = useState('')
 
+  const [tabs, setTabs] = useState(new Map())
   useEffect(() => {
-    getAuditLog().then(setLog)
+    Promise.all([getActions(), getCurrentTabs()]).then(([actions, currentTabs]) => {
+      setTabs(new Map(currentTabs.map((tab) => [tab.id, tab])))
+      setLog(actions.map((item) => ({
+        id: item.id, timestamp: item.created_at, action: item.action_type,
+        target_tab_ids: item.payload?.params?.tab_ids || (item.payload?.params?.tab_id ? [item.payload.params.tab_id] : item.tab_id ? [item.tab_id] : []),
+        rationale: item.rationale || '—', verdict: item.status, outcome: item.outcome?.result || (item.proposed ? 'awaiting confirmation' : '—'),
+      })))
+    }).catch(() => setLog([]))
   }, [])
 
   const filtered = useMemo(() => {
@@ -76,7 +83,7 @@ export default function AuditApp() {
                 <td className="mono">{new Date(entry.timestamp).toLocaleString()}</td>
                 <td className="mono">{entry.action}</td>
                 <td>
-                  {entry.target_tab_ids.map((id) => tabById(id)?.title ?? id).join(', ')}
+                  {entry.target_tab_ids.map((id) => tabs.get(Number(id))?.title ?? id).join(', ')}
                 </td>
                 <td className="rationale-cell">{entry.rationale}</td>
                 <td>

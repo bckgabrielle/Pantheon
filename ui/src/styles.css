@@ -310,6 +310,22 @@ html, body {
   line-height: 1.5;
 }
 
+/* ---------- Connected workspace ---------- */
+.workspace-panel, .settings-panel { flex: 1; overflow-y: auto; padding: 12px; }
+.metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+.metric { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
+.metric strong { color: var(--cyan); font-family: var(--font-display); font-size: 20px; }
+.metric span, .stored-item span, .stored-list > span { color: var(--text-muted); font-size: 11px; }
+.panel-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.panel-form input, .panel-form select, .panel-form label input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font: 12px var(--font-body); padding: 8px; }
+.panel-form label { color: var(--text-muted); font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
+.panel-form input:focus { outline: 1px solid var(--cyan); border-color: var(--cyan); }
+.section-heading { color: var(--text); font: 600 12px var(--font-display); margin: 2px 0; }
+.section-heading span { color: var(--text-muted); font: 10px var(--font-body); margin-left: 4px; }
+.stored-list { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+.stored-item { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 8px; display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; }
+.notice { color: var(--cyan); font-size: 11.5px; line-height: 1.4; }
+
 /* ---------- Header extras ---------- */
 .app-title-row {
   display: flex;

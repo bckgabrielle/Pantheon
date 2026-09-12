@@ -2,8 +2,10 @@ import { useState } from 'react'
 import ConfirmationList from './components/ConfirmationList'
 import ChatPanel from './components/ChatPanel'
 import DigestPanel from './components/DigestPanel'
+import WorkspacePanel from './components/WorkspacePanel'
+import SettingsPanel from './components/SettingsPanel'
 
-const VIEWS = ['Confirm', 'Chat', 'Digest']
+const VIEWS = ['Confirm', 'Chat', 'Digest', 'Workspace', 'Settings']
 
 export default function App() {
   const [view, setView] = useState('Confirm')
@@ -39,6 +41,8 @@ export default function App() {
       {view === 'Confirm' && <ConfirmationList />}
       {view === 'Chat' && <ChatPanel />}
       {view === 'Digest' && <DigestPanel />}
+      {view === 'Workspace' && <WorkspacePanel />}
+      {view === 'Settings' && <SettingsPanel />}
     </div>
   )
 }

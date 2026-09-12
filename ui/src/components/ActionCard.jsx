@@ -1,4 +1,3 @@
-import { tabById } from '../mock/mockData'
 
 const ACTION_LABELS = {
   close_tab: 'CLOSE TAB',
@@ -10,7 +9,7 @@ const DESTRUCTIVE_ACTIONS = new Set(['close_tab'])
 
 export default function ActionCard({ proposal, resolution, isPending, onResolve }) {
   const isDestructive = DESTRUCTIVE_ACTIONS.has(proposal.action)
-  const tabs = proposal.target_tab_ids.map(tabById).filter(Boolean)
+  const tabs = proposal.tabs || []
   const isResolved = Boolean(resolution)
 
   return (
@@ -21,7 +20,7 @@ export default function ActionCard({ proposal, resolution, isPending, onResolve 
 
       <div className="tab-refs">
         {tabs.map((t) => (
-          <div className="tab-ref" key={t.tab_id}>
+          <div className="tab-ref" key={t.id ?? t.external_tab_id}>
             <span className="fav">{t.favicon}</span>
             <span className="title" title={t.title}>{t.title}</span>
           </div>
