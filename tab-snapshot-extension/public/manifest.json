@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Snapshot",
+  "version": "0.1.0",
+  "description": "Captures local and synced Chrome tabs for an agent workflow.",
+  "permissions": ["tabs", "sessions", "tabGroups", "alarms", "storage", "bookmarks", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background/background.js", "type": "module" },
+  "action": { "default_title": "Capture tab snapshot", "default_popup": "src/popup/index.html" }
+}
