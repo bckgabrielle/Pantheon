@@ -1,6 +1,6 @@
 # Pantheon backend
 
-FastAPI + PostgreSQL storage for browser-based career memory.
+FastAPI + PostgreSQL storage for browser tab memory, reminders, and optional career tracking. It preserves tabs across sessions, supports stale/duplicate-tab analysis, and stores follow-ups for articles, research, shopping, job applications, or any other unfinished browser task.
 
 ```bash
 cd backend
