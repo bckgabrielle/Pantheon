@@ -2,6 +2,20 @@
 
 `npm run build` creates the unpacked extension in `dist/`.
 
+## Run the Python services
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+This starts the Groq-backed agent service on `http://localhost:8000` and
+the Pantheon backend on `http://localhost:8001`. The agent reads tabs from
+Pantheon's `/tabs/current` endpoint and logs proposed actions to
+Pantheon's `/actions` endpoint. Proposed actions are not executed by either
+Python service; browser actions still require explicit user confirmation
+and are executed later by the extension.
+
 ## Test in Chrome
 
 1. Open `chrome://extensions`, enable Developer mode, then choose **Load unpacked** and select `dist`.

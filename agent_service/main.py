@@ -1,0 +1,36 @@
+from __future__ import annotations
+
+from fastapi import FastAPI, HTTPException
+
+from agent_service.models import AgentRunRequest, Plan
+from agent_service.tools.backend_client import BackendClient
+from agent_service.agent.loop import AgentLoop
+from agent_service.agent.rate_limit import rate_limiter, RateLimitExceeded
+
+app = FastAPI(title="Tab Agent Service")
+
+
+@app.post("/agent/run", response_model=Plan)
+async def run_agent(req: AgentRunRequest) -> Plan:
+    """
+    Called by the extension popup (chat query) or the scheduled digest
+    trigger. Never called with a Groq key from the client — this
+    service holds that key.
+    """
+    try:
+        rate_limiter.check(req.session_id)
+    except RateLimitExceeded as e:
+        raise HTTPException(status_code=429, detail=str(e)) from e
+
+    backend = BackendClient()
+    try:
+        loop = AgentLoop(backend=backend)
+        plan = await loop.run(req.query)
+        return plan
+    finally:
+        await backend.aclose()
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"ok": True}
