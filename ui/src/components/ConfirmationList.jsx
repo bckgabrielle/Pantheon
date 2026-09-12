@@ -1,10 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import ActionCard from './ActionCard'
-import { getActions, getCurrentTabs, postActionLog } from '../lib/api'
+import { getActions, getCurrentTabs, getProposedActions, postActionLog } from '../lib/api'
 import { executeAction } from '../lib/messaging'
 import { appendAuditEntry } from '../lib/auditLog'
 
 const DESTRUCTIVE_ACTIONS = new Set(['close_tab'])
+
+function proposalFromLoggedAction(action, tabs) {
+  const tabMap = new Map(tabs.flatMap((tab) => [[String(tab.id), tab], [String(tab.tab_id), tab]]))
+  const params = action.payload?.params || action.payload || {}
+  const targetIds = (params.tab_ids || (params.tab_id ? [params.tab_id] : action.tab_id ? [action.tab_id] : [])).map(String)
+  return {
+    id: action.id,
+    action: action.action_type,
+    target_tab_ids: targetIds,
+    params,
+    rationale: action.rationale || 'No rationale provided.',
+    tabs: targetIds.map((id) => tabMap.get(id)).filter(Boolean),
+  }
+}
 
 export default function ConfirmationList() {
   const [proposals, setProposals] = useState(null) // null = loading
@@ -12,14 +26,17 @@ export default function ConfirmationList() {
   const [pendingIds, setPendingIds] = useState(new Set()) // ids currently mid-flight
 
   useEffect(() => {
-    Promise.all([getActions(), getCurrentTabs()]).then(([actions, tabs]) => {
-      const tabMap = new Map(tabs.map((tab) => [tab.id, tab]))
-      setProposals(actions.filter((action) => action.proposed && action.status === 'proposed').map((action) => {
-        const params = action.payload?.params || action.payload || {}
-        const targetIds = params.tab_ids || (params.tab_id ? [params.tab_id] : action.tab_id ? [action.tab_id] : [])
-        return { id: action.id, action: action.action_type, target_tab_ids: targetIds, params, rationale: action.rationale || 'No rationale provided.', tabs: targetIds.map((id) => tabMap.get(Number(id))).filter(Boolean) }
-      }))
-    }).catch(() => setProposals([]))
+    Promise.all([getActions(), getCurrentTabs()])
+      .then(([actions, tabs]) => {
+        const loggedProposals = actions
+          .filter((action) => action.proposed && action.status === 'proposed')
+          .map((action) => proposalFromLoggedAction(action, tabs))
+        if (loggedProposals.length) setProposals(loggedProposals)
+        else getProposedActions().then(setProposals).catch(() => setProposals([]))
+      })
+      .catch(() => {
+        getProposedActions().then(setProposals).catch(() => setProposals([]))
+      })
   }, [])
 
   const pendingCount = useMemo(() => {
@@ -30,22 +47,29 @@ export default function ConfirmationList() {
   async function resolve(id, verdict) {
     const proposal = proposals.find((p) => p.id === id)
     setPendingIds((prev) => new Set(prev).add(id))
+
     try {
       const result = await executeAction(proposal, verdict)
-      const outcome = result.ok ? result.outcome : `error: ${result.error}`
-      await postActionLog({
-        tab_id: proposal.tabs?.[0]?.id ?? null,
-        action_type: proposal.action,
-        status: verdict,
-        proposed: false,
+      const auditEntry = {
+        id: `log_${Date.now()}_${id}`,
+        timestamp: new Date().toISOString(),
+        action: proposal.action,
+        target_tab_ids: proposal.target_tab_ids,
         rationale: proposal.rationale,
-        payload: proposal.params,
-        outcome: { result: outcome },
-      })
-      await appendAuditEntry({ id: `log_${Date.now()}_${id}`, timestamp: new Date().toISOString(), action: proposal.action, target_tab_ids: proposal.target_tab_ids, rationale: proposal.rationale, verdict, outcome })
+        verdict,
+        outcome: result.ok ? result.outcome : `error: ${result.error}`,
+      }
+
+      await appendAuditEntry(auditEntry)
+      await postActionLog(auditEntry).catch(() => undefined)
+
       setResolutions((prev) => ({ ...prev, [id]: verdict }))
     } finally {
-      setPendingIds((prev) => { const next = new Set(prev); next.delete(id); return next })
+      setPendingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
     }
   }
 
@@ -60,13 +84,13 @@ export default function ConfirmationList() {
   }
 
   if (proposals === null) {
-    return <div className="empty-state">Loading proposed actions…</div>
+    return <div className="empty-state">Loading proposed actions...</div>
   }
 
   if (proposals.length === 0) {
     return (
       <div className="empty-state">
-        <div className="glyph">—</div>
+        <div className="glyph">-</div>
         No proposed actions right now. Tab Agent will surface suggestions here as it reviews your open tabs.
       </div>
     )

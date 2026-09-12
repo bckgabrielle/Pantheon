@@ -18,15 +18,22 @@ export default function ChatPanel() {
 
     try {
       const plan = await runAgent(query)
-      const suffix = plan.actions?.length ? `\n\n${plan.actions.length} action${plan.actions.length === 1 ? '' : 's'} added to Confirm.` : ''
-      setMessages((prev) => [...prev, { role: 'agent', text: `${plan.summary || 'No changes proposed.'}${suffix}` }])
+      const actionText = plan.actions?.length
+        ? `\n\nQueued ${plan.actions.length} proposed action${plan.actions.length === 1 ? '' : 's'} for confirmation.`
+        : ''
+      const warningText = plan.batch_warning ? `\n\n${plan.batch_warning}` : ''
+      setMessages((prev) => [...prev, { role: 'agent', text: `${plan.summary || 'No changes proposed.'}${actionText}${warningText}` }])
     } catch (error) {
-      setMessages((prev) => [...prev, { role: 'agent', text: `I couldn’t reach the agent: ${error.message}. Check Settings.` }])
+      setMessages((prev) => [
+        ...prev,
+        { role: 'agent', text: `I couldn't reach the agent service: ${error instanceof Error ? error.message : String(error)}. Check Settings.` },
+      ])
+    } finally {
+      setBusy(false)
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+      })
     }
-    setBusy(false)
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
-    })
   }
 
   function onKeyDown(e) {
@@ -46,13 +53,13 @@ export default function ChatPanel() {
             ))}
           </div>
         ))}
-        {busy && <div className="chat-bubble agent typing">thinking…</div>}
+        {busy && <div className="chat-bubble agent typing">thinking...</div>}
       </div>
       <div className="chat-input-row">
         <input
           type="text"
           value={input}
-          placeholder="Ask about your open tabs…"
+          placeholder="Ask about your open tabs..."
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           disabled={busy}

@@ -7,7 +7,7 @@
     "default_popup": "index.html",
     "default_title": "Tab Agent"
   },
-  "permissions": ["tabs", "sessions", "storage", "alarms"],
+  "permissions": ["tabs", "sessions", "storage", "alarms", "bookmarks", "tabGroups"],
   "background": {
     "service_worker": "background.js"
   },

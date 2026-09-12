@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     backend_base_url: str = "http://localhost:8001"
     backend_api_key: str = ""
     backend_user_id: str = "default"
+    cors_origins: str = "http://localhost:5173"
 
     # Guardrails
     max_close_actions_per_plan: int = 10

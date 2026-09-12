@@ -1,37 +1,44 @@
-# Tab Agent — Popup UI (Role #4: UX/Integration)
+# Tab Agent - Popup UI (Role #4: UX/Integration)
 
-All 5 phases from the build prompt, built against mocked contracts from #1/#2/#3. See `INTEGRATION_CHECKLIST.md` for every assumption made — flag those in async check-in before treating any of this as final. See `TESTING.md` for QA scenarios and the pre-milestone checklist.
+All 5 phases from the build prompt are wired into the broader Pantheon stack. See `INTEGRATION_CHECKLIST.md` for integration assumptions and `TESTING.md` for QA scenarios.
 
-## Run it
+## Run It
 
 ```bash
 npm install
-npm run dev       # local dev server — good for iterating on the UI in a browser tab
-npm run build     # produces dist/ for loading as an actual extension
+npm run dev
+npm run build
 ```
 
-## Load as an unpacked extension
+By default the UI talks to the real local services:
+
+```env
+VITE_AGENT_BASE_URL=http://localhost:8000
+VITE_BACKEND_BASE_URL=http://localhost:8001
+VITE_PANTHEON_API_KEY=replace-with-a-long-random-secret
+VITE_BACKEND_USER_ID=default
+VITE_USE_MOCK=false
+```
+
+Set `VITE_USE_MOCK=true` only when you want the UI to run entirely from local mock data.
+
+## Load As An Unpacked Extension
 
 1. `npm run build`
-2. Add three placeholder PNG icons (16/48/128px) to `dist/` as `icon16.png`, `icon48.png`, `icon128.png` — referenced by `manifest.json` but not included here.
+2. Add three placeholder PNG icons (16/48/128px) to `dist/` as `icon16.png`, `icon48.png`, `icon128.png` - referenced by `manifest.json` but not included here.
 3. Go to `chrome://extensions`, enable Developer mode, click "Load unpacked," select the `dist/` folder.
-4. Pin the extension and click it to open the popup. Click "Audit log ↗" in the popup header to open the dashboard as its own tab.
+4. Pin the extension and click it to open the popup. Click "Audit log" in the popup header to open the dashboard as its own tab.
 
-## What's here
+## What's Here
 
-- **Phase 1 — Confirmation UI**: `src/components/ConfirmationList.jsx` + `ActionCard.jsx`. Bulk approve/reject, with destructive actions (`close_tab`) always requiring an individual confirm click.
-- **Phase 2 — Chat / Digest**: `src/components/ChatPanel.jsx` (keyword-matched mock Q&A over open tabs) and `DigestPanel.jsx` (topic-clustered stale-tab summary, via `src/lib/cluster.js`). Toggle between Confirm / Chat / Digest in the popup header.
-- **Phase 3 — End-to-end wiring**: `src/lib/api.js` (mock backend calls matching #2's contract shape), `src/lib/messaging.js` + `public/background.js` (message-passing to a stub service worker standing in for #1's real executors). Swap `USE_MOCK` in `api.js` and replace `background.js`'s stub logic once the real pieces exist.
-- **Phase 4 — Audit dashboard**: `audit.html` / `src/audit/`. A separate extension page (not the popup, since popups close on blur) listing every approve/reject with filters by action type, verdict, and date. Reads from `chrome.storage.local` via `src/lib/auditLog.js`.
-- **Phase 5 — Testing**: `TESTING.md` — four end-to-end scenarios (duplicates, staleness, multi-device lag, a "bad" agent proposal) plus a pre-milestone QA checklist.
+- **Phase 1 - Confirmation UI**: `src/components/ConfirmationList.jsx` + `ActionCard.jsx`. Bulk approve/reject, with destructive actions (`close_tab`) always requiring an individual confirm click.
+- **Phase 2 - Chat / Digest**: `src/components/ChatPanel.jsx` calls `/agent/run`; `DigestPanel.jsx` summarizes topic-clustered stale tabs.
+- **Phase 3 - End-to-end wiring**: `src/lib/api.js` stores connection settings, calls the Pantheon backend and Python agent service, and adapts `Plan.actions` into UI proposal cards.
+- **Phase 4 - Audit dashboard**: `audit.html` / `src/audit/` lists approve/reject history using the backend action log plus local extension storage.
+- **Phase 5 - Testing**: `TESTING.md` covers duplicates, staleness, multi-device lag, and a bad proposal scenario.
 
-## Biggest open items for #1/#2/#3 (full list in `INTEGRATION_CHECKLIST.md`)
+## Integration Notes
 
-- `background.js`'s message shape (`EXECUTE_ACTION` / `{ ok, outcome }`) is my own guess — needs #1's sign-off or replacement.
-- The proposed-action schema needs a `risk_note` field added for the "bad action" scenario, and an `id` field for UI state tracking — currently assumed, not confirmed with #3.
-- Audit log currently lives in `chrome.storage.local`, not on #2's backend — needs reconciling with wherever `POST /actions` ends up living.
-# Pantheon frontend
-
-The popup is connected to the Pantheon backend and agent service. Start the services from the repository root with `docker compose up --build`, then open **Settings** in the extension and enter the backend URL (`http://localhost:8001`), agent URL (`http://localhost:8000`), API key, and user ID. Connection settings are kept in extension local storage.
-
-The UI reads current tabs, duplicate groups, action history, career profile, jobs, applications, reminders, and dashboard metrics from the API. Agent chat calls `/agent/run`; proposed actions remain confirmation-gated and every resolution is stored in the backend audit log.
+- Proposed model actions remain confirmation-gated. The Python service only proposes `close_tab`, `group_tabs`, and `bookmark_tab`; the extension service worker executes browser actions only after an approved UI verdict.
+- Audit log writes remain in `chrome.storage.local` for extension usability and are also best-effort posted to Pantheon's `POST /actions`.
+- The browser-exposed `VITE_PANTHEON_API_KEY` is acceptable for local/demo testing only. Production should replace it with a safer auth flow or gateway.

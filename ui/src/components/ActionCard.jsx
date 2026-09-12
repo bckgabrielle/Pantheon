@@ -1,3 +1,4 @@
+import { tabById } from '../mock/mockData'
 
 const ACTION_LABELS = {
   close_tab: 'CLOSE TAB',
@@ -9,7 +10,7 @@ const DESTRUCTIVE_ACTIONS = new Set(['close_tab'])
 
 export default function ActionCard({ proposal, resolution, isPending, onResolve }) {
   const isDestructive = DESTRUCTIVE_ACTIONS.has(proposal.action)
-  const tabs = proposal.tabs || []
+  const tabs = proposal.tabs?.length ? proposal.tabs : proposal.target_tab_ids.map(tabById).filter(Boolean)
   const isResolved = Boolean(resolution)
 
   return (
@@ -19,26 +20,31 @@ export default function ActionCard({ proposal, resolution, isPending, onResolve 
       </div>
 
       <div className="tab-refs">
-        {tabs.map((t) => (
-          <div className="tab-ref" key={t.id ?? t.external_tab_id}>
+        {tabs.length > 0 ? tabs.map((t) => (
+          <div className="tab-ref" key={t.id ?? t.external_tab_id ?? t.tab_id}>
             <span className="fav">{t.favicon}</span>
             <span className="title" title={t.title}>{t.title}</span>
+          </div>
+        )) : proposal.target_tab_ids.map((id) => (
+          <div className="tab-ref" key={id}>
+            <span className="fav">*</span>
+            <span className="title">Tab {id}</span>
           </div>
         ))}
       </div>
 
       {proposal.params?.group_name && (
-        <div className="group-name-pill">→ group: "{proposal.params.group_name}"</div>
+        <div className="group-name-pill">-&gt; group: "{proposal.params.group_name}"</div>
       )}
       {proposal.params?.folder && (
-        <div className="folder-pill">→ bookmarks / {proposal.params.folder}</div>
+        <div className="folder-pill">-&gt; bookmarks / {proposal.params.folder}</div>
       )}
 
       <p className="rationale">{proposal.rationale}</p>
 
       {proposal.risk_note && (
         <div className="risk-note">
-          <span>⚠</span>
+          <span>!</span>
           <span>{proposal.risk_note}</span>
         </div>
       )}
@@ -50,7 +56,7 @@ export default function ActionCard({ proposal, resolution, isPending, onResolve 
             disabled={isPending}
             onClick={() => onResolve(proposal.id, 'approved')}
           >
-            {isPending ? 'Working…' : isDestructive ? 'Confirm close' : 'Accept'}
+            {isPending ? 'Working...' : isDestructive ? 'Confirm close' : 'Accept'}
           </button>
           <button className="btn btn-reject" disabled={isPending} onClick={() => onResolve(proposal.id, 'rejected')}>
             Reject
@@ -58,7 +64,7 @@ export default function ActionCard({ proposal, resolution, isPending, onResolve 
         </div>
       ) : (
         <div className={`resolution-tag ${resolution}`}>
-          {resolution === 'approved' ? '✓ approved — queued for execution' : '✕ rejected'}
+          {resolution === 'approved' ? 'approved - queued for execution' : 'rejected'}
         </div>
       )}
     </div>

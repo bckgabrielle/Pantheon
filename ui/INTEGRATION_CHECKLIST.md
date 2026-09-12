@@ -37,3 +37,11 @@ Running log of every assumption baked into the Phase 1 build, to flag back to #1
 
 - Audit entries are stored in `chrome.storage.local` under the key `tabAgentAuditLog`, not on #2's backend. This was a deliberate choice so the dashboard works before #2's log-storage endpoint exists, but it means **the log is currently per-browser-profile, not centralized** — flag this if a multi-device audit view is expected later (the build prompt's "observability dashboard" doesn't specify whether the log needs to be cross-device).
 - `audit.html` is a separate extension page (opened via `chrome.tabs.create`), not part of the popup — popups close on blur, which doesn't suit a page you want to leave open and filter.
+
+## Integrated Python stack update
+
+- `src/lib/api.js` now defaults to real services instead of mocks: `POST /agent/run` on the agent service and `/tabs/*` plus `/actions` on the Pantheon backend.
+- `Plan.actions` from #3 are adapted locally into UI proposals: `action_id -> id`, `type -> action`, `reason -> rationale`, and `params.tab_id` / `params.tab_ids -> target_tab_ids`.
+- `public/background.js` now calls real Chrome APIs after an explicit approved verdict. Rejected actions are never executed.
+- `VITE_USE_MOCK=true` keeps the old mocked behavior available for isolated UI work.
+- Browser-exposed `VITE_PANTHEON_API_KEY` is suitable for local/demo wiring only. Production should put a narrow UI gateway or extension-mediated auth in front of privileged backend APIs.

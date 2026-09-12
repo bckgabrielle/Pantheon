@@ -1,13 +1,22 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
+from agent_service.config import settings
 from agent_service.models import AgentRunRequest, Plan
 from agent_service.tools.backend_client import BackendClient
 from agent_service.agent.loop import AgentLoop
 from agent_service.agent.rate_limit import rate_limiter, RateLimitExceeded
 
 app = FastAPI(title="Tab Agent Service")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.post("/agent/run", response_model=Plan)
